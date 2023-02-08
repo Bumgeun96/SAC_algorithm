@@ -1,4 +1,2 @@
 # SAC_algorithm
-\\
-dqdq
-\\
+Soft Actor-Critic algorithm
