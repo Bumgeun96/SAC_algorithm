@@ -29,7 +29,7 @@ def train(env, agent, n_episodes, max_step,training_steps):
     total_step = 0
     random_seed = random.randint(0,200)
     Eval = False
-    if not(training_steps == None):
+    if training_steps == None:
         n_episodes = 999999999
     for epi in range(1,n_episodes+1):
         state = env.reset(seed = random_seed)
