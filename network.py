@@ -5,6 +5,23 @@ from torch.distributions import Normal
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+class ValueNetwork(nn.Module):
+    def __init__(self, state_size,seed=0):
+        super(ValueNetwork, self).__init__()
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        self.hidden1 = nn.Linear(state_size, 256)
+        self.hidden2 = nn.Linear(256,256)
+        self.value = nn.Linear(256, 1)
+
+    def forward(self, states):
+        x = F.relu(self.hidden1(states))
+        x = F.relu(self.hidden2(x))
+        return self.value(x)
+
 class Critic(nn.Module):
     def __init__(self, state_size, action_size, seed=0):
         super(Critic, self).__init__()

@@ -12,10 +12,11 @@ parser = argparse.ArgumentParser(description="")
 # parser.add_argument("-env", type=str,default="Walker2d-v3", help="Environment name")
 parser.add_argument("-env", type=str,default="Hopper-v3", help="Environment name")
 parser.add_argument("-info", type=str, help="Information or name of the run")
-parser.add_argument("-n_epi", type=int, default=5000, help="The amount of training episodes, default is 5000")
+parser.add_argument("-n_epi", type=int, default=5000000, help="The amount of training episodes, default is 5000")
 parser.add_argument("-n_step", type=int, default=1000, help="The amount of steps per an episode, default is 1000")
 parser.add_argument("-terminal_steps", type=int, help="The amount of training steps, default is none")
 parser.add_argument("-seed", type=int, default=0, help="Seed for the env and torch network weights, default is 0")
+parser.add_argument("-lr_value", type=float, default=3e-4, help="Learning rate of adapting the network weights, default is 1e-3")
 parser.add_argument("-lr_critic", type=float, default=3e-4, help="Learning rate of adapting the network weights, default is 1e-3")
 parser.add_argument("-lr_actor", type=float, default=3e-4, help="Learning rate of adapting the network weights, default is 1e-3")
 parser.add_argument("-fixed_alpha", type=float, help="entropy alpha value, if not choosen the value is leaned by the agent")
@@ -23,16 +24,18 @@ parser.add_argument("-memory_size", type=int, default=int(1e6), help="Size of th
 parser.add_argument("-batch_size", type=int, default=256, help="Batch size, default is 256")
 parser.add_argument("-tau", type=float, default=0.005, help="Softupdate factor tau, default is 1e-2")
 parser.add_argument("-gamma", type=float, default=0.99, help="discount factor gamma, default is 0.99")
+parser.add_argument("-reward_scale", type=float, default=5, help="reward scale, default is 5")
 args = parser.parse_args()
 
 def train(env, agent, n_episodes, max_step,training_steps):
     total_step = 0
     random_seed = random.randint(0,200)
+    env.reset(seed = random_seed)
     Eval = False
     if training_steps == None:
         n_episodes = 999999999
     for epi in range(1,n_episodes+1):
-        state = env.reset(seed = random_seed)
+        state = env.reset()
         state = state[0].reshape((1,state_size))
         score = 0
         for step in range(1,max_step+1):
@@ -40,6 +43,8 @@ def train(env, agent, n_episodes, max_step,training_steps):
             action = agent.act(state).numpy()
             action = np.clip(action*action_high, action_low, action_high)
             next_state, reward, done, info,_ = env.step(action)
+            if step == max_step:
+                done = True
             next_state = next_state.reshape((1,state_size))
             agent.step(state, action, reward, next_state, done)
             state = next_state
@@ -98,14 +103,17 @@ def random_seed(seed):
 
 if __name__ == "__main__":
     env_name = args.env
-    seed = args.seed+4
+    seed = args.seed
     env = gym.make(env_name)
     if env_name.split('-')[0] == 'Hopper' or env_name.split('-')[0] == 'Walker2d':
         args.terminal_steps = 1000000
-    elif env_name.split('-')[0] == 'Halfcheetah' or env_name.split('-')[0] == 'Ant':
+        args.reward_scale = 5
+    elif env_name.split('-')[0] == 'HalfCheetah' or env_name.split('-')[0] == 'Ant':
         args.terminal_steps = 3000000
+        args.reward_scale = 5
     elif env_name.split('-')[0] == 'Humanoid':
         args.terminal_steps = 10000000
+        args.reward_scale = 20
     action_high = env.action_space.high[0]
     action_low = env.action_space.low[0]
     random_seed(seed)
